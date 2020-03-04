@@ -17,7 +17,7 @@ class DefaultJsonExportStrategy( JsonExportStrategy ):
         self.attr_handlers = [
             ( vFnAttribute,        self._handle_text_attr ),
             ( vNameAttribute,      self._handle_attr_name ),
-            ( vNicknameAttribute,  self._handle_text_list_attr ),
+            ( vNicknameAttribute,  self._handle_attr_nickname ),
             ( vBdayAttribute,      self._handle_text_attr ),
             ( vAdrAttribute,       self._handle_attr_adr ),
             ( vLabelAttribute,     self._handle_text_attr ),
@@ -30,7 +30,7 @@ class DefaultJsonExportStrategy( JsonExportStrategy ):
             ( vRoleAttribute,      self._handle_text_attr ),
             ( vAgentAttribute,     self._handle_text_attr ),
             ( vOrgAttribute,       self._handle_attr_org ),
-            ( vCategoriesAttribute, self._handle_text_list_attr ),
+            ( vCategoriesAttribute, self._handle_attr_categories ),
             ( vNoteAttribute,      self._handle_text_attr ),
             ( vProdidAttribute,    self._handle_text_attr ),
             ( vRevAttribute,       self._handle_text_attr ),
@@ -104,11 +104,6 @@ class DefaultJsonExportStrategy( JsonExportStrategy ):
         data[ "type" ] = "text"
         data[ "value" ] = self._get_value( attr, "value" )
         return data
-    
-    def _handle_text_list_attr(self, attr, data ):
-        data[ "type" ] = "text-list"
-        data[ "value" ] = self._get_value_list( attr, "value" )
-        return data
 
     def _handle_struct_attr(self, attr, data, name_map ):
         # name_map: json_key => attr
@@ -118,6 +113,15 @@ class DefaultJsonExportStrategy( JsonExportStrategy ):
             data[ "value" ][ out_key ] = self._get_value_list( attr, in_key )
         return data
 
+    def _handle_attr_nickname(self, attr, data ):
+        data[ "type" ] = "text-list"
+        data[ "value" ] = self._get_value_list( attr, "nicknames" )
+        return data
+
+    def _handle_attr_categories(self, attr, data ):
+        data[ "type" ] = "text-list"
+        data[ "value" ] = self._get_value_list( attr, "categories" )
+        return data
 
     def _handle_attr_name(self, attr, data ):
         # json_key => attr
