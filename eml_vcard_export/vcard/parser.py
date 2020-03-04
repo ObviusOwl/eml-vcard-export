@@ -10,6 +10,10 @@ class ParserError( Exception ):
     # TODO: line infos
     pass
 
+def parse_vcard( vcard_data ):
+    p = vCardParser()
+    return p.parse_vcard( vcard_data )
+
 class vCardParser( object ):
     
     def __init__(self):

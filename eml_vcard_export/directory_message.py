@@ -45,6 +45,12 @@ class DirectoryMessage( object ):
     def __init__(self):
         self.message = None
     
+    @staticmethod
+    def from_file( file_path ):
+        dm = DirectoryMessage()
+        dm.load_file( file_path )
+        return dm
+    
     def load_file(self, file_path ):
         with open(file_path, 'rb') as fp:
             self.message = email.message_from_binary_file(fp, policy=email.policy.default)

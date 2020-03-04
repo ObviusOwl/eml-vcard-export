@@ -1,14 +1,39 @@
 import os.path
+import sys
 
 import pandas as pd
 
+class FileOutput( object ):
+    def __init__(self, file_name, method ):
+        self.do_close = False
+
+        if file_name is None:
+            file_name = sys.stdout
+        if file_name != sys.stdout and file_name != sys.stderr:
+            self.fh = open( file_name, method )
+            self.do_close = True
+        else:
+            self.fh = file_name
+        
+    def __enter__(self):
+        return self.fh
+
+    def __exit__(self, type, value, traceback):
+        if self.do_close:
+            self.fh.close()
+
 class FileIterator( object ):
     
-    def __init__(self, *base_paths ):
+    def __init__(self, *base_paths, extensions=None, limit=None ):
         # base_path can be directory or single eml file
         self.base_paths = list(base_paths)
         self.extensions = []
         self.max_items = -1
+
+        if extensions is not None:
+            self.extensions = extensions
+        if limit is not None:
+            self.max_items = limit
 
         self.base_stack = []
         self.file_stack = []
