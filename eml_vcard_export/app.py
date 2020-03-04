@@ -3,6 +3,7 @@ import os
 import os.path
 import sys
 import traceback
+import json
 
 import pandas as pd
 
@@ -11,6 +12,7 @@ from .directory_message import DirectoryMessage
 from . import vcard
 from . import csv_export
 from . import vcf_export
+from . import json_export
 
 class ExportCsvApp( object ):
     
@@ -82,12 +84,62 @@ class ExportVcfApp( object ):
 
         print( "file count:", file_it.item_count, file=sys.stderr )
 
+class ExportJsonApp( object ):
+    
+    def parse_args(self, export_p):
+        export_p.add_argument('input_path', metavar="PATH", 
+                              help="Path to a input eml file or a directory to search for eml files" )
+        export_p.add_argument('--limit', metavar='COUNT', dest='limit_infiles', type=int, default=-1,
+                              help="Limit processing to the first COUNT found files. Defaults to -1, unlimited." )
+        export_p.add_argument('--out-file','-o', metavar='FILE.CSV', dest='output_path', default=None,
+                              help="Path to the output file. If omitted, stdout is used." )
+        export_p.add_argument('--pretty', dest='do_pretty', default=False, action='store_true',
+                              help="Pretty print json" )
+        
+    def main(self, args ):
+        strategy = json_export.DefaultJsonExportStrategy()
+        file_it = FileIterator( args.input_path, extensions=('eml',), limit=args.limit_infiles )
+
+        with FileOutput( args.output_path, "w" ) as out_fh:
+            first = True
+            for file_path in file_it:
+                print( file_path, file=sys.stderr )
+                if first:
+                    out_fh.write( "[" )
+                    first = False
+                else:
+                    out_fh.write( "," )
+                    if args.do_pretty:
+                        out_fh.write( "\n" )
+
+                try:
+                    dm = DirectoryMessage.from_file( file_path )
+                    card = vcard.parser.parse_vcard( dm.extract_vcard() )
+                    data = {
+                        "source-file": file_path
+                    }
+                    data[ "vcard" ] = strategy.vcard_to_native( card )
+                    
+                    indent = None
+                    if args.do_pretty:
+                        indent = "  "
+                    json_out = json.dumps( data, indent=indent )
+                    out_fh.write( json_out )
+                except Exception as e:
+                    traceback.print_exc()
+                    print( "Error:", str(e), file=sys.stderr )
+                    print("Ignoring file:", file_path, file=sys.stderr )
+            out_fh.write( "]" )
+
+        print( "file count:", file_it.item_count, file=sys.stderr )
+        
 
 class CliApp( object ):
     def __init__(self):
         self.args = None
         self.csv_app = ExportCsvApp()
         self.vcf_app = ExportVcfApp()
+        self.json_app = ExportJsonApp()
 
     def parse_args(self):
         main_p = argparse.ArgumentParser()
@@ -101,6 +153,10 @@ class CliApp( object ):
         export_p.set_defaults( subparser_callback=self.vcf_app.main )
         self.vcf_app.parse_args( export_p )
 
+        export_p = main_sub_p.add_parser( 'json_export', help="Export eml files to json" )
+        export_p.set_defaults( subparser_callback=self.json_app.main )
+        self.json_app.parse_args( export_p )
+        
         self.args = main_p.parse_args()
         if not hasattr(self.args, 'subparser_callback'):
             main_p.print_help()
