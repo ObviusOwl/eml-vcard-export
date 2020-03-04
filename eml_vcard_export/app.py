@@ -101,16 +101,13 @@ class ExportJsonApp( object ):
         file_it = FileIterator( args.input_path, extensions=('eml',), limit=args.limit_infiles )
 
         with FileOutput( args.output_path, "w" ) as out_fh:
-            first = True
+            out_fh.write( "[" )
+            has_comma = True
             for file_path in file_it:
                 print( file_path, file=sys.stderr )
-                if first:
-                    out_fh.write( "[" )
-                    first = False
-                else:
-                    out_fh.write( "," )
-                    if args.do_pretty:
-                        out_fh.write( "\n" )
+                if not has_comma:
+                    out_fh.write( ",\n" )
+                    has_comma = True
 
                 try:
                     dm = DirectoryMessage.from_file( file_path )
@@ -125,6 +122,7 @@ class ExportJsonApp( object ):
                         indent = "  "
                     json_out = json.dumps( data, indent=indent )
                     out_fh.write( json_out )
+                    has_comma = False
                 except Exception as e:
                     traceback.print_exc()
                     print( "Error:", str(e), file=sys.stderr )
